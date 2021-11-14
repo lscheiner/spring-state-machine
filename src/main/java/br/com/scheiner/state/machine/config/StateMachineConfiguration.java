@@ -1,9 +1,6 @@
 package br.com.scheiner.state.machine.config;
 
-import java.util.EnumSet;
-
 import org.springframework.context.annotation.Configuration;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
@@ -16,7 +13,6 @@ import br.com.scheiner.state.machine.listener.StateMachineListener;
 import br.com.scheiner.state.machine.state.States;
 
 @Configuration
-//@EnableStateMachine
 @EnableStateMachineFactory
 public class StateMachineConfiguration extends EnumStateMachineConfigurerAdapter <States, Events> {
 	
@@ -35,8 +31,12 @@ public class StateMachineConfiguration extends EnumStateMachineConfigurerAdapter
 	  states
 	    .withStates() 
 	    .initial(States.ORDERED)
-	    .states(EnumSet.allOf(States.class))
-	    .end(States.PAYED);
+	    .state(States.ASSEMBLED, executeAction())
+	    .state(States.DELIVERED , executeAction2())
+	    .state(States.INVOICED)
+	    .end(States.PAYED)
+	    .end(States.CANCELLED)
+	    .end(States.RETURNED);
 
 	}
 	
