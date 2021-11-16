@@ -1,6 +1,8 @@
 package br.com.scheiner.state.machine.config;
 
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
@@ -11,6 +13,7 @@ import org.springframework.statemachine.config.builders.StateMachineTransitionCo
 import br.com.scheiner.state.machine.events.Events;
 import br.com.scheiner.state.machine.listener.StateMachineListener;
 import br.com.scheiner.state.machine.state.States;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableStateMachineFactory
@@ -31,8 +34,8 @@ public class StateMachineConfiguration extends EnumStateMachineConfigurerAdapter
 	  states
 	    .withStates() 
 	    .initial(States.ORDERED)
-	    .state(States.ASSEMBLED, executeAction())
-	    .state(States.DELIVERED , executeAction2())
+	    .state(States.ASSEMBLED)
+	    .state(States.DELIVERED)
 	    .state(States.INVOICED)
 	    .end(States.PAYED)
 	    .end(States.CANCELLED)
@@ -42,20 +45,12 @@ public class StateMachineConfiguration extends EnumStateMachineConfigurerAdapter
 	
 	public Action<States, Events> executeAction() {
 	    return context -> {
-	    	
+	    	//Message<Events> msg = MessageBuilder.withPayload(Events.DELIVER).setHeader("order-id","MSG").build();
+	    	//context.getStateMachine().sendEvent(Mono.just(msg)).subscribe();
 	    	System.out.println("Entrei na action" );
 	    };
 	    
 	}
-	
-	public Action<States, Events> executeAction2() {
-	    return context -> {
-	    	
-	    	System.out.println("Entrei na action2" );
-	    };
-	    
-	}
-	
 	
 	
 	@Override
@@ -65,13 +60,12 @@ public class StateMachineConfiguration extends EnumStateMachineConfigurerAdapter
 	   .source(States.ORDERED)
 	   .target(States.ASSEMBLED)
 	   .event(Events.ASSEMBLE)
-	   //.action(executeAction())
+	   .action(this.executeAction())
 	   .and()
 	   .withExternal()
 	   .source(States.ASSEMBLED)
 	   .target(States.DELIVERED)
 	   .event(Events.DELIVER)
-	   //.action(executeAction2())
 	   .and()
 	   .withExternal()
 	   .source(States.DELIVERED)
