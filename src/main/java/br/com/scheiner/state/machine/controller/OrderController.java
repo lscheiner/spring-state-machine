@@ -1,5 +1,7 @@
 package br.com.scheiner.state.machine.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
@@ -31,46 +33,42 @@ public class OrderController {
 
 	@ResponseStatus(code = HttpStatus.CREATED)
 	@PostMapping("order")
-	public ResponseEntity<String> createOrder(@RequestBody OrderDto orderDto) throws Exception {
+	public ResponseEntity<String> createOrder() throws Exception {
 
-		
-		StateMachine<States, Events> stateMachine = factory.getStateMachine();
+		StateMachine<States, Events> stateMachine = factory.getStateMachine(); // state inicial ORDERED
 
+		Message<Events> message = MessageBuilder.withPayload(Events.ASSEMBLE).setHeader("order-id", create()).build();
 
-		Message<Events> message = MessageBuilder.withPayload(Events.ASSEMBLE).setHeader("order-id", orderDto).build();
-		
-		stateMachine
-		.sendEvent(Mono.just(message))
-		.subscribe();
-		
-		// stateMachine.stopReactively();
+		stateMachine.sendEvent(Mono.just(message)).subscribe();
 
 		return ResponseEntity.created(UrlUtils.createUrl(stateMachine.getUuid().toString())).build();
 	}
 
 	@ResponseStatus(code = HttpStatus.CREATED)
 	@PostMapping("state")
-	public ResponseEntity<String> createState(@RequestBody OrderDto orderDto)  {
+	public ResponseEntity<String> createState(@RequestBody OrderDto orderDto) { // cria uma state machine de um determinado ponto
 
-		
 		StateMachine<States, Events> stateMachine = factory.getStateMachine();
 
-		stateMachine.getStateMachineAccessor().doWithAllRegions(access -> access.resetStateMachineReactively(
-				new DefaultStateMachineContext<>(States.valueOf(orderDto.getState()), null, null, null, null, stateMachine.getId()))
-				.subscribe());
+		stateMachine.getStateMachineAccessor()
+				.doWithAllRegions(access -> access
+						.resetStateMachineReactively(new DefaultStateMachineContext<>(
+								States.valueOf(orderDto.getState()), null, null, null, null, stateMachine.getId())).subscribe());
 
 		log.info(String.format("After reset, state: %s, id: %s", stateMachine.getState().getId().toString(),
 				stateMachine.getUuid()));
-		
+
 		Message<Events> message = MessageBuilder.withPayload(Events.valueOf(orderDto.getEvents())).setHeader("order-id", orderDto).build();
 
-		stateMachine
-		.sendEvent(Mono.just(message))
-		.subscribe();
-		
+		stateMachine.sendEvent(Mono.just(message)).subscribe();
 
 		return ResponseEntity.created(UrlUtils.createUrl(stateMachine.getUuid().toString())).build();
 
+	}
+
+	private OrderDto create() {
+		UUID uuid = UUID.randomUUID();
+		return OrderDto.builder().id(uuid.toString()).name("Create order").build();
 	}
 
 }
